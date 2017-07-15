@@ -135,18 +135,18 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
     }
     
     private func setup() {
-        backgroundColor = .red
+        backgroundColor = .green
         
         webView.frame = bounds
         webView.delegate = self
         webView.keyboardDisplayRequiresUserAction = false
         webView.scalesPageToFit = false
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         webView.dataDetectorTypes = UIDataDetectorTypes()
-        webView.backgroundColor = .white
+        webView.backgroundColor = .green
+        webView.isOpaque = false
         
         webView.scrollView.isScrollEnabled = isScrollEnabled
-        webView.scrollView.bounces = false
+        webView.scrollView.bounces = true
         webView.scrollView.delegate = self
         webView.scrollView.clipsToBounds = false
         
