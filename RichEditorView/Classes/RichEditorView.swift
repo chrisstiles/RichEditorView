@@ -9,14 +9,14 @@ import UIKit
 
 /// RichEditorDelegate defines callbacks for the delegate of the RichEditorView
 @objc public protocol RichEditorDelegate: class {
-
+    
     /// Called when the inner height of the text being displayed changes
     /// Can be used to update the UI
     @objc optional func richEditor(_ editor: RichEditorView, heightDidChange height: Int)
-
+    
     /// Called whenever the content inside the view changes
     @objc optional func richEditor(_ editor: RichEditorView, contentDidChange content: String)
-
+    
     /// Called when the rich editor starts editing
     @objc optional func richEditorTookFocus(_ editor: RichEditorView)
     
@@ -37,36 +37,36 @@ import UIKit
 }
 
 /// RichEditorView is a UIView that displays richly styled text, and allows it to be edited in a WYSIWYG fashion.
-open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGestureRecognizerDelegate {
-
+@objcMembers open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGestureRecognizerDelegate {
+    
     // MARK: Public Properties
-
+    
     /// The delegate that will receive callbacks when certain actions are completed.
     open weak var delegate: RichEditorDelegate?
-
+    
     /// Input accessory view to display over they keyboard.
     /// Defaults to nil
     open override var inputAccessoryView: UIView? {
         get { return webView.cjw_inputAccessoryView }
         set { webView.cjw_inputAccessoryView = newValue }
     }
-
+    
     /// The internal UIWebView that is used to display the text.
-    open private(set) var webView: UIWebView
-
+    open var webView: UIWebView
+    
     /// Whether or not scroll is enabled on the view.
     open var isScrollEnabled: Bool = true {
         didSet {
             webView.scrollView.isScrollEnabled = isScrollEnabled
         }
     }
-
+    
     /// Whether or not to allow user input in the view.
     open var isEditingEnabled: Bool {
         get { return isContentEditable }
         set { isContentEditable = newValue }
     }
-
+    
     /// The content HTML of the text being displayed.
     /// Is continually updated as the text is being edited.
     open private(set) var contentHTML: String = "" {
@@ -74,7 +74,7 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             delegate?.richEditor?(self, contentDidChange: contentHTML)
         }
     }
-
+    
     /// The internal height of the text being displayed.
     /// Is continually being updated as the text is edited.
     open private(set) var editorHeight: Int = 0 {
@@ -82,10 +82,10 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             delegate?.richEditor?(self, heightDidChange: editorHeight)
         }
     }
-
+    
     /// The value we hold in order to be able to set the line height before the JS completely loads.
     private var innerLineHeight: Int = 28
-
+    
     /// The line height of the editor. Defaults to 28.
     open private(set) var lineHeight: Int {
         get {
@@ -100,26 +100,27 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             runJS("RE.setLineHeight('\(innerLineHeight)px');")
         }
     }
-
+    
     // MARK: Private Properties
-
+    
     /// Whether or not the editor has finished loading or not yet.
     private var isEditorLoaded = false
-
+    
     /// Value that stores whether or not the content should be editable when the editor is loaded.
     /// Is basically `isEditingEnabled` before the editor is loaded.
     private var editingEnabledVar = true
-
+    
     /// The private internal tap gesture recognizer used to detect taps and focus the editor
     private let tapRecognizer = UITapGestureRecognizer()
-
+    
     /// The inner height of the editor div.
     /// Fetches it from JS every time, so might be slow!
+    //public var contentBottomOffset
     private var clientHeight: Int {
         let heightString = runJS("document.getElementById('editor').clientHeight;")
         return Int(heightString) ?? 0
     }
-
+    
     // MARK: Initialization
     
     public override init(frame: CGRect) {
@@ -127,28 +128,30 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
         super.init(frame: frame)
         setup()
     }
-
+    
     required public init?(coder aDecoder: NSCoder) {
         webView = UIWebView()
         super.init(coder: aDecoder)
         setup()
     }
     
+    
     private func setup() {
-        backgroundColor = .green
-        
+        backgroundColor = .clear
         webView.frame = bounds
         webView.delegate = self
         webView.keyboardDisplayRequiresUserAction = false
         webView.scalesPageToFit = false
+        
         webView.dataDetectorTypes = UIDataDetectorTypes()
-        webView.backgroundColor = .green
-        webView.isOpaque = false
+        webView.backgroundColor = .clear
         
         webView.scrollView.isScrollEnabled = isScrollEnabled
+        webView.scrollView.scrollsToTop = false
         webView.scrollView.bounces = true
         webView.scrollView.delegate = self
         webView.scrollView.clipsToBounds = false
+        webView.isOpaque = false
         
         webView.cjw_inputAccessoryView = nil
         
@@ -159,16 +162,16 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             let request = URLRequest(url: url)
             webView.loadRequest(request)
         }
-
+        
         tapRecognizer.addTarget(self, action: #selector(viewWasTapped))
         tapRecognizer.delegate = self
         addGestureRecognizer(tapRecognizer)
     }
-
+    
     // MARK: - Rich Text Editing
-
+    
     // MARK: Properties
-
+    
     /// The HTML that is currently loaded in the editor view, if it is loaded. If it has not been loaded yet, it is the
     /// HTML that will be loaded into the editor view once it finishes initializing.
     public var html: String {
@@ -183,12 +186,12 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             }
         }
     }
-
+    
     /// Text representation of the data that has been input into the editor view, if it has been loaded.
     public var text: String {
         return runJS("RE.getText()")
     }
-
+    
     /// Private variable that holds the placeholder text, so you can set the placeholder before the editor loads.
     private var placeholderText: String = ""
     /// The placeholder text that should be shown when there is no user input.
@@ -199,8 +202,8 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             runJS("RE.setPlaceholderText('\(newValue.escaped)');")
         }
     }
-
-
+    
+    
     /// The href of the current selection, if the current selection's parent is an anchor tag.
     /// Will be nil if there is no href, or it is an empty string.
     public var selectedHref: String? {
@@ -212,19 +215,19 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             return href
         }
     }
-
+    
     /// Whether or not the selection has a type specifically of "Range".
     public var hasRangeSelection: Bool {
         return runJS("RE.rangeSelectionExists();") == "true" ? true : false
     }
-
+    
     /// Whether or not the selection has a type specifically of "Range" or "Caret".
     public var hasRangeOrCaretSelection: Bool {
         return runJS("RE.rangeOrCaretSelectionExists();") == "true" ? true : false
     }
-
+    
     // MARK: Methods
-
+    
     public func removeFormat() {
         runJS("RE.removeFormat();")
     }
@@ -283,23 +286,23 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
     public func header(_ h: Int) {
         runJS("RE.setHeading('\(h)');")
     }
-
+    
     public func indent() {
         runJS("RE.setIndent();")
     }
-
+    
     public func outdent() {
         runJS("RE.setOutdent();")
     }
-
+    
     public func orderedList() {
         runJS("RE.setOrderedList();")
     }
-
+    
     public func unorderedList() {
         runJS("RE.setUnorderedList();")
     }
-
+    
     public func blockquote() {
         runJS("RE.setBlockquote()");
     }
@@ -329,15 +332,27 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
     public func focus() {
         runJS("RE.focus();")
     }
-
+    
     public func focus(at: CGPoint) {
         runJS("RE.focusAtPoint(\(at.x), \(at.y));")
     }
     
     public func blur() {
-        runJS("RE.blurFocus()")
+        runJS("RE.blurFocus();")
     }
-
+    
+    public func setPasteAsPlainText() {
+        runJS("RE.pasteAsPlainText();")
+    }
+    
+    public func addOpenClass() {
+        runJS("RE.addOpenClass();")
+    }
+    
+    public func removeOpenClass() {
+        runJS("RE.removeOpenClass();")
+    }
+    
     /// Runs some JavaScript on the UIWebView and returns the result
     /// If there is no result, returns an empty string
     /// - parameter js: The JavaScript string to be run
@@ -347,25 +362,25 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
         let string = webView.stringByEvaluatingJavaScript(from: js) ?? ""
         return string
     }
-
-
+    
+    
     // MARK: - Delegate Methods
-
-
+    
+    
     // MARK: UIScrollViewDelegate
-
+    
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         // We use this to keep the scroll view from changing its offset when the keyboard comes up
         if !isScrollEnabled {
             scrollView.bounds = webView.bounds
         }
     }
-
-
+    
+    
     // MARK: UIWebViewDelegate
-
+    
     public func webView(_ webView: UIWebView, shouldStartLoadWith request: URLRequest, navigationType: UIWebViewNavigationType) -> Bool {
-
+        
         // Handle pre-defined editor actions
         let callbackPrefix = "re-callback://"
         if request.url?.absoluteString.hasPrefix(callbackPrefix) == true {
@@ -373,7 +388,7 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             // When we get a callback, we need to fetch the command queue to run the commands
             // It comes in as a JSON array of commands that we need to parse
             let commands = runJS("RE.getCommandQueue();")
-
+            
             if let data = commands.data(using: .utf8) {
                 
                 let jsonCommands: [String]
@@ -383,10 +398,10 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
                     jsonCommands = []
                     NSLog("RichEditorView: Failed to parse JSON Commands")
                 }
-
+                
                 jsonCommands.forEach(performCommand)
             }
-
+            
             return false
         }
         
@@ -402,19 +417,19 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
         
         return true
     }
-
-
+    
+    
     // MARK: UIGestureRecognizerDelegate
-
+    
     /// Delegate method for our UITapGestureDelegate.
     /// Since the internal web view also has gesture recognizers, we have to make sure that we actually receive our taps.
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
-
-
+    
+    
     // MARK: - Private Implementation Details
-
+    
     private var isContentEditable: Bool {
         get {
             if isEditorLoaded {
@@ -437,11 +452,14 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
     /// For example, if the cursor is directly at the top of what is visible, it will return 0.
     /// This also means that it will be negative if it is above what is currently visible.
     /// Can also return 0 if some sort of error occurs between JS and here.
+    private var previousRelativeCaretPosition: Int = 0
+    private var caretPositionWasNil: Bool = false
+    
     private var relativeCaretYPosition: Int {
         let string = runJS("RE.getRelativeCaretYPosition();")
         return Int(string) ?? 0
     }
-
+    
     private func updateHeight() {
         let heightString = runJS("document.getElementById('editor').clientHeight;")
         let height = Int(heightString) ?? 0
@@ -449,11 +467,11 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             editorHeight = height
         }
     }
-
+    
     /// Scrolls the editor to a position where the caret is visible.
     /// Called repeatedly to make sure the caret is always visible when inputting text.
     /// Works only if the `lineHeight` of the editor is available.
-    private func scrollCaretToVisible() {
+    public func scrollCaretToVisible() {
         let scrollView = self.webView.scrollView
         
         let contentHeight = clientHeight > 0 ? CGFloat(clientHeight) : scrollView.frame.height
@@ -464,21 +482,28 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
         let cursorHeight = lineHeight - 4
         let visiblePosition = CGFloat(relativeCaretYPosition)
         var offset: CGPoint?
-
-        if visiblePosition + cursorHeight > scrollView.bounds.size.height {
+        
+        if visiblePosition + cursorHeight > scrollView.frame.size.height {
             // Visible caret position goes further than our bounds
-            offset = CGPoint(x: 0, y: (visiblePosition + lineHeight) - scrollView.bounds.height + scrollView.contentOffset.y)
-
+            var yOffset: CGFloat = visiblePosition - scrollView.bounds.height + scrollView.contentOffset.y
+            if yOffset < 0 {
+                yOffset = 0
+            }
+            
+            offset = CGPoint(x: 0, y: yOffset)
         } else if visiblePosition < 0 {
             // Visible caret position is above what is currently visible
-            var amount = scrollView.contentOffset.y + visiblePosition
+            print("here: \(visiblePosition)")
+            var amount = scrollView.contentOffset.y + visiblePosition - lineHeight
             amount = amount < 0 ? 0 : amount
             offset = CGPoint(x: scrollView.contentOffset.x, y: amount)
-
+            
         }
-
+        
         if let offset = offset {
-            scrollView.setContentOffset(offset, animated: true)
+            UIView.animate(withDuration: 0.1, delay: 0, options: .beginFromCurrentState, animations: {
+                scrollView.setContentOffset(offset, animated: true)
+            }, completion: nil)
         }
     }
     
@@ -524,7 +549,7 @@ open class RichEditorView: UIView, UIScrollViewDelegate, UIWebViewDelegate, UIGe
             delegate?.richEditor?(self, handle: action)
         }
     }
-
+    
     /// Called by the UITapGestureRecognizer when the user taps the view.
     /// If we are not already the first responder, focus the editor.
     @objc private func viewWasTapped() {

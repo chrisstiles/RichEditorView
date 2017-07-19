@@ -23,6 +23,41 @@ window.onload = function() {
 
 RE.editor = document.getElementById('editor');
 
+// Paste as plain text if the user did not copy content from this webview
+var canPasteFormattedContent = false;
+
+document.addEventListener("paste", function(e) {
+    // get text representation of clipboard
+    var plainText = e.clipboardData.getData("text/plain");
+
+    if (!canPasteFormattedContent || plainText === "") {
+        // cancel paste
+        e.preventDefault();
+
+        // insert plain text manually
+        document.execCommand("insertHTML", false, plainText);
+    }
+});
+
+document.addEventListener("copy", function() {
+    canPasteFormattedContent = true
+});
+
+// Called every time viewcontroller enters the foreground
+RE.pasteAsPlainText = function() {
+    canPasteFormattedContent = false;
+};
+
+// Add open class to the editor
+RE.addOpenClass = function() {
+    RE.editor.classList.add("open");
+};
+
+// Remove open class from the editor
+RE.removeOpenClass = function() {
+    RE.editor.classList.remove("open");
+};
+
 // Not universally supported, but seems to work in iOS 7 and 8
 document.addEventListener("selectionchange", function() {
     RE.backuprange();
@@ -392,24 +427,12 @@ RE.getSelectedHref = function() {
 // Returns the cursor position relative to its current position onscreen.
 // Can be negative if it is above what is visible
 RE.getRelativeCaretYPosition = function() {
-    var y = 0;
-    var sel = window.getSelection();
-    if (sel.rangeCount) {
-        var range = sel.getRangeAt(0);
-        var needsWorkAround = (range.startOffset == 0)
-        /* Removing fixes bug when node name other than 'div' */
-        // && range.startContainer.nodeName.toLowerCase() == 'div');
-        if (needsWorkAround) {
-            y = range.startContainer.offsetTop - window.pageYOffset;
-        } else {
-            if (range.getClientRects) {
-                var rects=range.getClientRects();
-                if (rects.length > 0) {
-                    y = rects[0].top;
-                }
-            }
-        }
-    }
-
-    return y;
+    var range = window.getSelection().getRangeAt(0);
+    var span = document.createElement('span')
+   
+    range.insertNode(span)
+    
+    var offset = span.getBoundingClientRect();
+    span.parentNode.removeChild(span);
+    return offset.top;
 };

@@ -54,8 +54,38 @@ div {
     min-height: 100%;
     height: 100%;
     overflow: auto;
-    display: block;
-    font-family: 'HelveticaNeue';
-    color:#666666;
+    display: inline-block;
+    width:100%;
+    font-family: 'Montserrat-Regular';
+    color:#fff;
     font-size: 12pt;
+    transition:color .4s;
+}
+
+pre {
+    white-space: pre-wrap;
+}
+
+#editor.open {
+    color:#4b4b4b;
+}
+
+#editor br {
+    display: block;
+}
+
+#editor.placeholder {
+    background-color:purple !important;
+}
+
+#editor span {
+    display: inline-block;
+}
+
+#editor strong,
+#editor b {
+    color:red;
+    font-family: 'Montserrat-Medium';
+    line-height:26px;
+    display: inline-block;
 }
