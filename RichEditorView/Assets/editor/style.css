@@ -57,9 +57,9 @@ div {
     display: inline-block;
     width:100%;
     font-family: 'Montserrat-Regular';
-    color:#fff;
     font-size: 12pt;
     transition:color .4s;
+    color:#4b4b4b;
 }
 
 pre {
