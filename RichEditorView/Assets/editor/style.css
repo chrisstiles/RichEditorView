@@ -56,7 +56,8 @@ div {
     overflow: auto;
     display: inline-block;
     width:100%;
-    font-family: 'Montserrat-Regular';
+    font-family: 'Montserrat', 'Montserrat-Regular', sans-serif;
+    font-weight:400;
     font-size: 12pt;
     transition:color .4s;
     color:#4b4b4b;
@@ -80,7 +81,8 @@ pre {
 
 #editor strong,
 #editor b {
-    font-family: 'Montserrat-Medium';
+    font-family: 'Montserrat', 'Montserrat-Medium', sans-serif;
+    font-weight:700;
     line-height:26px;
     display: inline-block;
 }
